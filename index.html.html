@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Final Expense Underwriting Tool</title>
+  <style>
+    :root{
+      --bg:#080808;
+      --card:#151515;
+      --card2:#1f1f1f;
+      --text:#f5f5f5;
+      --muted:#a7a7a7;
+      --accent:#8B5CF6;
+      --good:#22c55e;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --line:#2b2b2b;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:linear-gradient(180deg,#050505,#111);
+      color:var(--text);
+      padding:18px;
+    }
+    .app{max-width:880px;margin:0 auto;}
+    h1{font-size:26px;margin:10px 0 4px}
+    h2{font-size:18px;margin:0 0 12px}
+    p{color:var(--muted);line-height:1.45}
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:18px;
+      margin:14px 0;
+      box-shadow:0 12px 30px rgba(0,0,0,.28);
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+    }
+    @media(max-width:700px){.grid{grid-template-columns:1fr}}
+    label{display:block;font-size:13px;color:#d9d9d9;margin-bottom:6px}
+    input, select, textarea, button{
+      width:100%;
+      padding:13px;
+      border-radius:12px;
+      border:1px solid #333;
+      background:#0f0f0f;
+      color:var(--text);
+      font-size:16px;
+    }
+    textarea{min-height:86px;resize:vertical}
+    button{
+      cursor:pointer;
+      background:var(--accent);
+      border:none;
+      font-weight:700;
+      margin-top:10px;
+    }
+    button.secondary{background:#242424;color:#fff;border:1px solid #333}
+    .carrier-list,.condition-list{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+    @media(max-width:700px){.carrier-list,.condition-list{grid-template-columns:1fr}}
+    .check{
+      background:var(--card2);
+      border:1px solid var(--line);
+      padding:12px;
+      border-radius:14px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .check input{width:auto;transform:scale(1.2)}
+    .pill{
+      display:inline-block;
+      padding:5px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      margin:2px 3px 2px 0;
+    }
+    .good{background:rgba(34,197,94,.16);color:#86efac;border:1px solid rgba(34,197,94,.35)}
+    .warn{background:rgba(245,158,11,.16);color:#fcd34d;border:1px solid rgba(245,158,11,.35)}
+    .bad{background:rgba(239,68,68,.16);color:#fca5a5;border:1px solid rgba(239,68,68,.35)}
+    .neutral{background:rgba(139,92,246,.16);color:#c4b5fd;border:1px solid rgba(139,92,246,.35)}
+    .result-card{
+      background:#101010;
+      border:1px solid #303030;
+      border-radius:16px;
+      padding:14px;
+      margin:10px 0;
+    }
+    .score{font-size:13px;color:var(--muted)}
+    .small{font-size:12px;color:var(--muted)}
+    .hidden{display:none}
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .brand{color:var(--muted);font-size:13px}
+    .warning-box{
+      border-left:4px solid var(--warn);
+      padding:10px 12px;
+      background:rgba(245,158,11,.08);
+      border-radius:10px;
+      color:#ffe8b5;
+      margin-top:10px;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <h1>Final Expense Underwriting Tool</h1>
+      <div class="brand">MVP field/telesales assistant • offline-friendly single-file app</div>
+    </div>
+    <button class="secondary" style="width:auto;padding:10px 14px" onclick="clearAll()">Reset</button>
+  </div>
+
+  <div class="card">
+    <h2>1. Choose Your Available Carriers</h2>
+    <p>Select only the carriers you can actually write. The recommendations will ignore anything unchecked.</p>
+    <div class="carrier-list" id="carrierList"></div>
+    <button onclick="saveCarriers()">Save Carrier Setup</button>
+    <div id="savedMsg" class="small"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. Client Snapshot</h2>
+    <div class="grid">
+      <div>
+        <label>Client Name</label>
+        <input id="clientName" placeholder="Optional" />
+      </div>
+      <div>
+        <label>Age</label>
+        <input id="age" type="number" placeholder="Example: 68" />
+      </div>
+      <div>
+        <label>Height</label>
+        <select id="height">
+          <option value="">Select height</option>
+          <option>4'8</option><option>4'9</option><option>4'10</option><option>4'11</option>
+          <option>5'0</option><option>5'1</option><option>5'2</option><option>5'3</option>
+          <option>5'4</option><option>5'5</option><option>5'6</option><option>5'7</option>
+          <option>5'8</option><option>5'9</option><option>5'10</option><option>5'11</option>
+          <option>6'0</option><option>6'1</option><option>6'2</option><option>6'3</option>
+          <option>6'4</option><option>6'5</option><option>6'6</option><option>6'7</option>
+        </select>
+      </div>
+      <div>
+        <label>Weight</label>
+        <input id="weight" type="number" placeholder="Example: 210" />
+      </div>
+      <div>
+        <label>Tobacco/Nicotine</label>
+        <select id="tobacco">
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </select>
+      </div>
+      <div>
+        <label>Bank / Direct Express</label>
+        <select id="billing">
+          <option value="bank">Bank / Credit Union</option>
+          <option value="de">Direct Express / DE Card</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3. Health Conditions</h2>
+    <p>Check anything that applies. Use the drill-down fields for timing and details.</p>
+    <div class="condition-list" id="conditionList"></div>
+
+    <div id="drilldowns" class="card" style="background:#101010">
+      <h2>Drill-Down Questions</h2>
+      <div class="grid">
+        <div>
+          <label>Years since heart/stroke/cancer/surgery/treatment</label>
+          <select id="yearsSince">
+            <option value="">Not sure / not applicable</option>
+            <option value="0.5">Under 1 year</option>
+            <option value="1.5">1-2 years</option>
+            <option value="2.5">2-3 years</option>
+            <option value="3.5">3+ years</option>
+            <option value="5.5">5+ years</option>
+          </select>
+        </div>
+        <div>
+          <label>Uses oxygen?</label>
+          <select id="oxygen">
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
+        </div>
+        <div>
+          <label>Needs help with ADLs?</label>
+          <select id="adls">
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
+        </div>
+        <div>
+          <label>Diabetic insulin?</label>
+          <select id="insulin">
+            <option value="no">No</option>
+            <option value="yes_after_50">Yes, started after 50</option>
+            <option value="yes_before_50">Yes, started before 50</option>
+          </select>
+        </div>
+        <div>
+          <label>Diabetic + Gabapentin/Lyrica/Neuropathy?</label>
+          <select id="neuropathy">
+            <option value="no">No / not mentioned</option>
+            <option value="yes">Yes</option>
+          </select>
+        </div>
+        <div>
+          <label>Current cancer?</label>
+          <select id="currentCancer">
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
+        </div>
+      </div>
+      <label style="margin-top:12px">Medications / Notes</label>
+      <textarea id="notes" placeholder="Example: Nitroglycerin, Furosemide, Gabapentin, Spiriva, oxygen, hospital stay, etc."></textarea>
+    </div>
+
+    <button onclick="runUW()">Recommend Carriers</button>
+  </div>
+
+  <div class="card">
+    <h2>4. Results</h2>
+    <div id="results">
+      <p>Enter client info and conditions, then tap “Recommend Carriers.”</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Important</h2>
+    <p class="small">This MVP is a field/telesales helper based on your Lifeline/worksheet logic. It does not replace carrier underwriting, application questions, your manager/upline, or compliance rules. Use it to route faster and ask better questions.</p>
+  </div>
+</div>
+
+<script>
+const carriers = [
+  {id:"amamicable", name:"American Amicable"},
+  {id:"rna", name:"Royal Neighbors"},
+  {id:"trinity", name:"Trinity / Family Benefit"},
+  {id:"transamerica", name:"Transamerica"},
+  {id:"lbl", name:"Liberty Bankers"}
+];
+
+const conditions = [
+  {id:"copd", name:"COPD / Emphysema"},
+  {id:"diabetes", name:"Diabetes"},
+  {id:"heart_attack", name:"Heart Attack"},
+  {id:"stroke", name:"Stroke / TIA"},
+  {id:"cancer", name:"Cancer"},
+  {id:"kidney", name:"Kidney / Renal Disease"},
+  {id:"liver", name:"Liver Disease / Cirrhosis / Hepatitis"},
+  {id:"bipolar", name:"Bipolar / Schizophrenia"},
+  {id:"parkinsons", name:"Parkinson’s"},
+  {id:"seizures", name:"Seizures / Epilepsy"},
+  {id:"hiv", name:"HIV / AIDS"},
+  {id:"dementia", name:"Memory / Dementia"},
+  {id:"hospital", name:"Recent Hospital Stay / Surgery"},
+  {id:"adls_condition", name:"ADLs / Assisted Living / Wheelchair"}
+];
+
+const buildMax = {
+  rna: {"4'8":175,"4'9":181,"4'10":194,"4'11":194,"5'0":200,"5'1":207,"5'2":214,"5'3":221,"5'4":228,"5'5":235,"5'6":243,"5'7":250,"5'8":258,"5'9":265,"5'10":273,"5'11":281,"6'0":289,"6'1":297,"6'2":305,"6'3":314,"6'4":322,"6'5":330,"6'6":339,"6'7":348},
+  transamerica: {"4'8":214,"4'9":221,"4'10":229,"4'11":237,"5'0":245,"5'1":254,"5'2":262,"5'3":270,"5'4":279,"5'5":288,"5'6":297,"5'7":306,"5'8":315,"5'9":325,"5'10":334,"5'11":344,"6'0":353,"6'1":363,"6'2":373,"6'3":384,"6'4":394,"6'5":404,"6'6":415},
+};
+
+function renderSetup(){
+  const saved = JSON.parse(localStorage.getItem("selectedCarriers") || "null");
+  const defaults = saved || carriers.map(c=>c.id);
+  document.getElementById("carrierList").innerHTML = carriers.map(c => `
+    <label class="check"><input type="checkbox" class="carrier" value="${c.id}" ${defaults.includes(c.id) ? "checked":""}> ${c.name}</label>
+  `).join("");
+
+  document.getElementById("conditionList").innerHTML = conditions.map(c => `
+    <label class="check"><input type="checkbox" class="condition" value="${c.id}"> ${c.name}</label>
+  `).join("");
+}
+renderSetup();
+
+function saveCarriers(){
+  const selected = [...document.querySelectorAll(".carrier:checked")].map(x=>x.value);
+  localStorage.setItem("selectedCarriers", JSON.stringify(selected));
+  document.getElementById("savedMsg").innerHTML = "✅ Carrier setup saved on this device.";
+}
+
+function selectedCarriers(){
+  return [...document.querySelectorAll(".carrier:checked")].map(x=>x.value);
+}
+
+function selectedConditions(){
+  return [...document.querySelectorAll(".condition:checked")].map(x=>x.value);
+}
+
+function add(rec, carrier, status, note, score){
+  if(!rec[carrier]) rec[carrier] = {score:0, statuses:[], notes:[]};
+  rec[carrier].score += score;
+  rec[carrier].statuses.push(status);
+  rec[carrier].notes.push(note);
+}
+
+function classWeight(status){
+  const s = status.toLowerCase();
+  if(s.includes("decline")) return -100;
+  if(s.includes("gi")) return -30;
+  if(s.includes("modified")) return -20;
+  if(s.includes("graded")) return -10;
+  if(s.includes("standard")) return 15;
+  if(s.includes("level")) return 20;
+  if(s.includes("preferred")) return 25;
+  if(s.includes("select")) return 20;
+  return 0;
+}
+
+function evaluateBuild(rec, height, weight){
+  if(!height || !weight) return;
+  Object.keys(buildMax).forEach(carrier=>{
+    const max = buildMax[carrier][height];
+    if(max && weight > max){
+      add(rec, carrier, "Build Warning", `Weight appears above ${carrier.toUpperCase()} chart threshold for ${height}. Verify product/risk class.`, -12);
+    } else if(max) {
+      add(rec, carrier, "Build OK", `Weight appears within available ${carrier.toUpperCase()} build threshold.`, 6);
+    }
+  });
+}
+
+function runUW(){
+  saveCarriers();
+  const active = selectedCarriers();
+  const cond = selectedConditions();
+  const years = parseFloat(document.getElementById("yearsSince").value || "99");
+  const oxygen = document.getElementById("oxygen").value;
+  const adls = document.getElementById("adls").value;
+  const insulin = document.getElementById("insulin").value;
+  const neuropathy = document.getElementById("neuropathy").value;
+  const currentCancer = document.getElementById("currentCancer").value;
+  const tobacco = document.getElementById("tobacco").value;
+  const billing = document.getElementById("billing").value;
+  const height = document.getElementById("height").value;
+  const weight = Number(document.getElementById("weight").value);
+  const notes = document.getElementById("notes").value.toLowerCase();
+
+  let rec = {};
+  active.forEach(c => rec[c] = {score:0,statuses:[],notes:[]});
+
+  // Default positive baseline
+  active.forEach(c => add(rec, c, "Available", "Carrier selected for consideration.", 5));
+
+  if(billing === "de"){
+    add(rec,"transamerica","Strong DE Fit","Best known option in this tool for Direct Express / true SS billing.",30);
+    add(rec,"trinity","DE Compatible","Trinity/FBL can handle Direct Express per Lifeline notes.",12);
+  }
+
+  evaluateBuild(rec, height, weight);
+
+  if(cond.includes("copd")){
+    if(oxygen === "yes"){
+      add(rec,"transamerica","Standard / Possible Select","Oxygen can still route Transamerica depending timing; avoid oxygen + tobacco on Express.",10);
+      add(rec,"lbl","Caution","COPD with oxygen is tougher; verify before writing.",-8);
+      add(rec,"rna","Caution","Oxygen adds risk; verify before writing.",-8);
+      add(rec,"trinity","Graded Likely","COPD is commonly graded with Trinity/FBL.",-8);
+      add(rec,"amamicable","Modified Likely","COPD often routes modified.",-10);
+    } else if(tobacco === "yes"){
+      add(rec,"transamerica","Standard","COPD no oxygen often workable; tobacco still matters.",18);
+      add(rec,"lbl","Modified Likely","LBL may be modified with COPD + tobacco.",-8);
+      add(rec,"rna","Modified Likely","RNA may be modified with COPD + tobacco.",-8);
+      add(rec,"trinity","Graded Likely","Trinity/FBL often graded on COPD.",-8);
+      add(rec,"amamicable","Modified Likely","American Amicable often modified on COPD.",-10);
+    } else {
+      add(rec,"transamerica","Standard","COPD no oxygen is generally workable.",22);
+      add(rec,"rna","Standard","COPD no tobacco can be standard per Lifeline style logic.",15);
+      add(rec,"lbl","Standard","COPD no tobacco can be standard.",15);
+      add(rec,"trinity","Graded","Trinity/FBL often graded for COPD.",-5);
+      add(rec,"amamicable","Modified","American Amicable often modified for COPD.",-8);
+    }
+  }
+
+  if(cond.includes("diabetes")){
+    if(neuropathy === "yes"){
+      add(rec,"transamerica","Standard","Diabetic neuropathy/Gabapentin can still work with Transamerica.",22);
+      add(rec,"rna","Level if no insulin","RNA can be good if no insulin; caution with insulin.",8);
+      add(rec,"lbl","Modified Possible","Neuropathy can push LBL modified if treated recently.",-8);
+      add(rec,"trinity","Graded Likely","Diabetes complications often push graded.",-10);
+      add(rec,"amamicable","Modified Likely","Diabetes complications may push modified.",-10);
+    } else if(insulin === "yes_before_50"){
+      add(rec,"transamerica","Standard","Transamerica can still be viable; verify details.",18);
+      add(rec,"rna","Standard","RNA can be standard with insulin.",12);
+      add(rec,"lbl","Standard / Caution","LBL may be standard depending age and details.",8);
+      add(rec,"trinity","Caution","Insulin details matter; verify.",-3);
+      add(rec,"amamicable","Modified Possible","Insulin before certain ages can hurt AmAm.",-8);
+    } else {
+      add(rec,"transamerica","Standard / Possible Preferred","Good diabetes fit, especially with activity credit.",22);
+      add(rec,"rna","Preferred/Standard","RNA often good for diabetes depending insulin.",18);
+      add(rec,"lbl","Level","LBL often workable for diabetes.",16);
+      add(rec,"trinity","Level","Trinity/FBL often workable when no complicating factors.",14);
+      add(rec,"amamicable","Level","AmAm can be level depending insulin timing.",12);
+    }
+  }
+
+  if(cond.includes("heart_attack")){
+    if(years < 2){
+      add(rec,"transamerica","Preferred Possible","Transamerica often strong on heart attack, verify meds/details.",20);
+      add(rec,"lbl","Modified","LBL likely modified within 2 years.",-10);
+      add(rec,"rna","Graded","RNA likely graded within 2 years.",-10);
+      add(rec,"trinity","Graded","Trinity/FBL likely graded between 1-2 years.",-8);
+      add(rec,"amamicable","Modified","AmAm likely modified within 2 years.",-10);
+    } else {
+      add(rec,"transamerica","Preferred","Strong option after heart attack depending other conditions.",25);
+      add(rec,"lbl","Preferred","LBL can be preferred over 2 years.",18);
+      add(rec,"rna","Standard","RNA can be standard over 2 years.",14);
+      add(rec,"trinity","Level","Trinity/FBL can be level over 2 years.",14);
+      add(rec,"amamicable","Level/Graded by timing","AmAm improves after 3+ years; verify exact timing.",8);
+    }
+  }
+
+  if(cond.includes("stroke")){
+    if(years < 2){
+      add(rec,"transamerica","Standard / Select","Transamerica remains a top route for recent stroke/TIA.",18);
+      add(rec,"lbl","Modified","LBL often modified within 2 years.",-10);
+      add(rec,"rna","Graded/Standard by timing","RNA can be graded under 12 months and standard closer to 24.",-5);
+      add(rec,"trinity","Graded","Trinity/FBL likely graded within 2 years.",-8);
+      add(rec,"amamicable","Modified","AmAm likely modified within 2 years.",-10);
+    } else {
+      add(rec,"transamerica","Standard / Select","Still good route.",20);
+      add(rec,"lbl","Level","LBL can be level after 2 years.",16);
+      add(rec,"rna","Standard","RNA can be standard after timing clears.",14);
+      add(rec,"trinity","Level","Trinity/FBL can be level after 2 years.",14);
+      add(rec,"amamicable","Level if 3+ years","AmAm usually improves after 3 years.",8);
+    }
+  }
+
+  if(cond.includes("cancer")){
+    if(currentCancer === "yes"){
+      add(rec,"lbl","Modified / Caution","Current cancer can be modified unless repeat/multiple cancers; verify.",-10);
+      add(rec,"transamerica","Decline Risk","Recurring, metastatic, multiple, or recent cancers can decline.",-25);
+      add(rec,"rna","Graded / Standard by timing","Timing and cancer type matter heavily.",-12);
+      add(rec,"trinity","Caution","May require clean answers/timing.",-8);
+      add(rec,"amamicable","Modified Likely","Current/recent cancer often modified.",-12);
+    } else if(years < 2){
+      add(rec,"lbl","Modified","LBL often modified within 2 years.",-8);
+      add(rec,"transamerica","Decline/Graded Risk","Under 2 years can be rough depending product/type.",-12);
+      add(rec,"rna","Graded","RNA often graded in 2-5 year window.",-8);
+      add(rec,"trinity","Caution","Verify type/treatment timing.",-5);
+      add(rec,"amamicable","Modified","AmAm likely modified within 2 years.",-8);
+    } else {
+      add(rec,"lbl","Level","LBL can be level after 2 years.",16);
+      add(rec,"transamerica","Standard","Transamerica often standard after 2 years if not recurring/metastatic/multiple.",16);
+      add(rec,"trinity","Level","Trinity/FBL can be level over 2 years.",14);
+      add(rec,"rna","Standard if 5+ years","RNA improves at 5+ years.",8);
+      add(rec,"amamicable","Level if 3+ years","AmAm improves after 3+ years.",8);
+    }
+  }
+
+  if(cond.includes("kidney")){
+    add(rec,"transamerica","Standard","Transamerica often workable for kidney disease no dialysis.",15);
+    add(rec,"lbl","Standard","LBL can be standard.",12);
+    add(rec,"rna","Graded/GI by timing","RNA may be graded/GI depending diagnosis timing.",-8);
+    add(rec,"trinity","Graded","Trinity/FBL commonly graded.",-8);
+    add(rec,"amamicable","Modified if chronic","American Amicable may modify chronic cases.",-8);
+  }
+
+  if(cond.includes("liver")){
+    add(rec,"transamerica","Standard / Select","Transamerica can be workable for Hepatitis/liver depending details.",15);
+    add(rec,"lbl","Preferred/Standard by timing","LBL can improve after 2 years.",10);
+    add(rec,"rna","Standard / GI if cirrhosis","RNA depends on liver diagnosis severity.",-3);
+    add(rec,"trinity","Graded","Trinity/FBL commonly graded for liver disease.",-8);
+    add(rec,"amamicable","Modified/Graded/Level by timing","AmAm strongly timing-dependent.",-5);
+  }
+
+  if(cond.includes("bipolar")){
+    add(rec,"transamerica","Preferred / Select","Strong route for bipolar/schizophrenia based on Lifeline notes.",20);
+    add(rec,"lbl","Standard Possible","Often not asked but may standard rate.",10);
+    add(rec,"rna","Standard/Graded by timing","Diagnosis timing matters.",5);
+    add(rec,"trinity","Level/Graded","Bipolar often level; schizophrenia often graded.",0);
+    add(rec,"amamicable","Level","AmAm can be level.",12);
+  }
+
+  if(cond.includes("parkinsons")){
+    add(rec,"transamerica","Preferred / Select","Transamerica can be strong route.",20);
+    add(rec,"lbl","Modified if recent","LBL can be modified if treated within 2 years.",-5);
+    add(rec,"rna","Standard","RNA can be standard.",10);
+    add(rec,"trinity","Graded","Trinity/FBL commonly graded.",-8);
+    add(rec,"amamicable","Graded","AmAm commonly graded.",-8);
+  }
+
+  if(cond.includes("seizures")){
+    add(rec,"transamerica","Preferred / Select","Strong route for seizures.",20);
+    add(rec,"lbl","Standard","LBL can be standard.",12);
+    add(rec,"rna","Standard","RNA can be standard.",12);
+    add(rec,"trinity","Graded","Trinity/FBL commonly graded.",-8);
+    add(rec,"amamicable","Graded","AmAm commonly graded.",-8);
+  }
+
+  if(cond.includes("hiv") || cond.includes("dementia")){
+    active.forEach(c => add(rec,c,"High Risk / Likely Avoid","This condition often requires GI/special handling outside selected carrier set.",-35));
+  }
+
+  if(cond.includes("hospital")){
+    if(years < 1){
+      add(rec,"transamerica","Standard/Decline by details","Current/recent hospitalization details matter; verify overnight stays.",-3);
+      add(rec,"lbl","Decline Risk","LBL can decline for significant confinement in last year.",-12);
+      add(rec,"rna","Standard/Graded by duration","Less than 2 weeks total may be standard; otherwise graded.",-5);
+      add(rec,"trinity","Level if over 1 year","Recent timing matters.",-5);
+      add(rec,"amamicable","Preferred if not current","Verify current status.",3);
+    }
+  }
+
+  if(cond.includes("adls_condition") || adls === "yes"){
+    add(rec,"transamerica","Caution / Graded by timing","ADLs can impact strongly; verify current need and timing.",-12);
+    add(rec,"lbl","Decline Risk","LBL may decline with recent ADL/assisted living exposure.",-20);
+    add(rec,"rna","Possible if can do ADLs","RNA can work only if ADLs are okay.",-5);
+    add(rec,"trinity","Level if timing cleared","Trinity can work after timing clears.",0);
+    add(rec,"amamicable","Caution","Verify before writing.",-10);
+  }
+
+  if(notes.includes("nitro") || notes.includes("nitroglycerin")){
+    add(rec,"lbl","Modified fallback","Nitro may cause issues; LBL modified can be fallback.",-4);
+    add(rec,"transamerica","Caution","Currently using nitro changes the situation; verify before writing.",-6);
+  }
+  if(notes.includes("spiriva")){
+    add(rec,"transamerica","COPD Flag","Spiriva should be treated as COPD.",0);
+  }
+  if(notes.includes("furosemide")){
+    active.forEach(c => add(rec,c,"CHF Question","Furosemide: ask about CHF and other heart meds/blood thinners.",-3));
+  }
+
+  const names = Object.fromEntries(carriers.map(c=>[c.id,c.name]));
+  let rows = active.map(id => {
+    const item = rec[id];
+    const uniqueStatuses = [...new Set(item.statuses)];
+    const uniqueNotes = [...new Set(item.notes)];
+    const worst = uniqueStatuses.some(s=>/decline|high risk/i.test(s)) ? "bad" :
+      uniqueStatuses.some(s=>/modified|graded|caution|warning/i.test(s)) ? "warn" : "good";
+    return {id, name:names[id], score:item.score, statuses:uniqueStatuses, notes:uniqueNotes, tag:worst};
+  }).sort((a,b)=>b.score-a.score);
+
+  const best = rows[0];
+  const client = document.getElementById("clientName").value || "Client";
+
+  document.getElementById("results").innerHTML = `
+    <div class="warning-box"><strong>Best current route for ${client}:</strong> ${best ? best.name : "No carriers selected"} ${best ? `(${best.score} score)` : ""}</div>
+    ${rows.map((r,i)=>`
+      <div class="result-card">
+        <h2>${i+1}. ${r.name}</h2>
+        <div class="score">Recommendation score: ${r.score}</div>
+        <div>${r.statuses.map(s=>`<span class="pill ${r.tag}">${s}</span>`).join("")}</div>
+        <ul>${r.notes.slice(0,8).map(n=>`<li>${n}</li>`).join("")}</ul>
+      </div>
+    `).join("")}
+    <button class="secondary" onclick="copyResults()">Copy Results</button>
+  `;
+}
+
+function copyResults(){
+  const text = document.getElementById("results").innerText;
+  navigator.clipboard.writeText(text).then(()=>alert("Results copied."));
+}
+
+function clearAll(){
+  if(!confirm("Clear inputs and results? Carrier setup will stay saved.")) return;
+  document.querySelectorAll("input:not(.carrier), textarea").forEach(x=>x.value="");
+  document.querySelectorAll(".condition").forEach(x=>x.checked=false);
+  document.getElementById("results").innerHTML = "<p>Enter client info and conditions, then tap “Recommend Carriers.”</p>";
+}
+</script>
+</body>
+</html>
